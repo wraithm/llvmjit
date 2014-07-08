@@ -50,7 +50,7 @@ cgen prog (Var x) = do --getVar x >>= load -- lookup variable in program
         | n == x = return $ externf (Name x)
     lookupProg (_:defs) x = lookupProg defs x
     lookupProg [] x = error "Cannot find symbol in program, nor local context..."
-cgen _ (FlNum n) = return $ ConstantOperand $ Float (Double n)
+cgen _ (Num n) = return $ ConstantOperand $ Float (Double n)
 cgen prog a@(App _ _) = do
     let (fn, args) = cgenApp a
     largs <- mapM (cgen prog) args

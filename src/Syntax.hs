@@ -4,7 +4,7 @@ type Name = String
 
 data Expr
     = Var Name
-    | FlNum Double
+    | Num Double
     | App Expr Expr
     | Let [Defn] Expr
     | Lam [Name] Expr

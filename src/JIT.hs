@@ -28,13 +28,13 @@ passes :: PassSetSpec
 passes = defaultCuratedPassSetSpec { optLevel = Just 3 }
 
 runJIT :: AST.Module -> IO (Either String AST.Module)
-runJIT mod = do
+runJIT modl =
     withContext $ \context ->
         jit context $ \execEngine ->
-            runErrorT $ withModuleFromAST context mod $ \m ->
+            runErrorT $ withModuleFromAST context modl $ \m ->
                 withPassManager passes $ \pm -> do
-                    runErrorT $ verify m
-                    runPassManager pm m
+                    _ <- runErrorT $ verify m
+                    _ <- runPassManager pm m
                     optmod <- moduleAST m
                     s <- moduleLLVMAssembly m
                     putStrLn s

@@ -58,7 +58,7 @@ rhssOf = map rhsOf
     rhsOf (Extern n _) = Var n
 
 freeVarsE :: Set Name -> Expr -> AnnExpr
-freeVarsE _ (FlNum d) = (S.empty, ANum d)
+freeVarsE _ (Num d) = (S.empty, ANum d)
 freeVarsE lv (Var x)
     | x `S.member` lv = (S.singleton x, AVar x)
     | otherwise = (S.empty, AVar x)
@@ -92,7 +92,7 @@ defAbstract (Extn n args) = Extern n args
 
 abstractE :: AnnExpr -> Expr
 abstractE (_, AVar x) = Var x
-abstractE (_, ANum n) = FlNum n
+abstractE (_, ANum n) = Num n
 abstractE (_, AApp e1 e2) = App (abstractE e1) (abstractE e2)
 abstractE (_, ALet defs body) = Let (map defAbstract defs) (abstractE body)
 abstractE (free, ALam args body) = foldl' App c (map Var fvs)
@@ -123,7 +123,7 @@ renameE :: [(Name, Name)] -> NameSupply -> Expr -> (NameSupply, Expr)
 renameE env ns (Var x) = (ns, Var (lookupDefault x x env))
   where
     lookupDefault d k = fromMaybe d . lookup k
-renameE _ ns (FlNum n) = (ns, FlNum n)
+renameE _ ns (Num n) = (ns, Num n)
 renameE env ns (App e1 e2) = (ns'', App e1' e2')
   where
     (ns', e1') = renameE env ns e1
