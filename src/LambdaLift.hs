@@ -14,7 +14,9 @@ data AnnExpr' a
     | ALet [AnnDefn] AnnExpr
     | ALam [Name] AnnExpr
 
-data AnnDefn = Func Name [Name] AnnExpr | Extn Name [Name]
+data AnnDefn 
+    = Func Name [Name] AnnExpr 
+--     | Extn Name [Name]
 
 type AnnExpr = (Set Name, AnnExpr' (Set Name))
 type AnnProgram = [AnnDefn]
@@ -43,21 +45,9 @@ freeVars :: Program -> AnnProgram
 freeVars = map defFreeVars
   where
     defFreeVars (Function n args body) = Func n args (freeVarsE (S.fromList args) body)
-    defFreeVars (Extern n args) = Extn n args
+--     defFreeVars (Extern n args _) = Extn n args
 
-bindersOf :: [Defn] -> [Name]
-bindersOf = map binderOf
-  where
-    binderOf (Function n _ _) = n
-    binderOf (Extern n _) = n
-
-rhssOf :: [Defn] -> [Expr]
-rhssOf = map rhsOf
-  where
-    rhsOf (Function _ _ e) = e
-    rhsOf (Extern n _) = Var n
-
-freeVarsE :: Set Name -> Expr -> AnnExpr
+freeVarsE :: Set Name -> Expr Name -> AnnExpr
 freeVarsE _ (Num d) = (S.empty, ANum d)
 freeVarsE lv (Var x)
     | x `S.member` lv = (S.singleton x, AVar x)
@@ -86,11 +76,11 @@ freeVarsE lv (Lam args body) = (freeVarsOf body' \\ setArgs, ALam args body')
 abstract :: AnnProgram -> Program
 abstract = map defAbstract
 
-defAbstract :: AnnDefn -> Defn
+defAbstract :: AnnDefn -> Defn Name
 defAbstract (Func n args e) = Function n args (abstractE e)
-defAbstract (Extn n args) = Extern n args
+-- defAbstract (Extn n args) = Extern n args
 
-abstractE :: AnnExpr -> Expr
+abstractE :: AnnExpr -> Expr Name
 abstractE (_, AVar x) = Var x
 abstractE (_, ANum n) = Num n
 abstractE (_, AApp e1 e2) = App (abstractE e1) (abstractE e2)
@@ -104,10 +94,10 @@ abstractE (free, ALam args body) = foldl' App c (map Var fvs)
 rename :: Program -> Program
 rename = snd . mapAccumL renameC initialNameSupply
 
-renameC :: NameSupply -> Defn -> (NameSupply, Defn)
-renameC ns (Extern n args) = (ns', Extern n args')
-    where
-    (ns', args', _) = newNames ns args
+renameC :: NameSupply -> Defn Name -> (NameSupply, Defn Name)
+-- renameC ns (Extern n args) = (ns', Extern n args')
+--     where
+--     (ns', args', _) = newNames ns args
 renameC ns (Function n args rhs) = (ns'', Function n args' rhs')
     where
     (ns', args', env) = newNames ns args
@@ -119,7 +109,7 @@ newNames ns oldNames = (ns', new, env)
     (ns', new) = getNames ns oldNames
     env = zip oldNames new
 
-renameE :: [(Name, Name)] -> NameSupply -> Expr -> (NameSupply, Expr)
+renameE :: [(Name, Name)] -> NameSupply -> Expr Name -> (NameSupply, Expr Name)
 renameE env ns (Var x) = (ns, Var (lookupDefault x x env))
   where
     lookupDefault d k = fromMaybe d . lookup k
@@ -144,12 +134,12 @@ renameE env ns (Let defs body) = (ns''', Let defs' body')
 collectCs :: Program -> Program
 collectCs = concatMap collectOne
 
-collectOne :: Defn -> [Defn]
+collectOne :: Defn Name -> [Defn Name]
 collectOne (Function n args rhs) = Function n args rhs' : cs
   where (cs, rhs') = collectCsE rhs
-collectOne x = [x]
+-- collectOne x = [x]
 
-collectCsE :: Expr -> ([Defn], Expr)
+collectCsE :: Expr Name -> ([Defn Name], Expr Name)
 collectCsE (App e1 e2) = (cs' ++ cs'', App e1' e2')
   where
     (cs', e1') = collectCsE e1
@@ -161,7 +151,7 @@ collectCsE (Let defs body) = (rhssCs ++ bodyCs ++ localCs, mkLet nonCs' body')
     isLam (Lam _ _) = True
     isLam _ = False
     isLamRhs (Function _ _ e) = isLam e
-    isLamRhs _ = False
+--     isLamRhs _ = False
     mkLet d b = if null d then b else Let d b
 
     (rhssCs, defs') = mapAccumL collectCsDef [] defs
@@ -171,7 +161,7 @@ collectCsE (Let defs body) = (rhssCs ++ bodyCs ++ localCs, mkLet nonCs' body')
     localCs = [ Function n args b | Function n _ (Lam args b) <- cs' ]
     (bodyCs, body') = collectCsE body
 
-    collectCsDef cs (Extern n args) = (cs, Extern n args)
+--     collectCsDef cs (Extern n args ty) = (cs, Extern n args ty)
     collectCsDef cs (Function n args rhs) = (cs ++ rhsCs, Function n args rhs')
       where (rhsCs, rhs') = collectCsE rhs
 collectCsE x = ([], x)

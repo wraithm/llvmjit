@@ -16,6 +16,7 @@ import           Control.Lens                       hiding (ix)
 import           Control.Monad.State
 
 import           LLVM.General.AST
+import           LLVM.General.AST.AddrSpace
 import qualified LLVM.General.AST.CallingConvention as CC
 import qualified LLVM.General.AST.Constant          as C
 import           LLVM.General.AST.Global
@@ -54,6 +55,9 @@ external retty  label argtys = addDef $
 
 double :: Type
 double = FloatingPointType 64 IEEE
+
+doublePtr :: Type
+doublePtr = PointerType double (AddrSpace 0)
 
 type Names = Map String Int
 
