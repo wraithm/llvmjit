@@ -18,9 +18,13 @@ true :: Expr S.Name
 true = Lam ["x", "y"] (Var "x")
 
 trueProg :: Program
+trueProg = lambdaLift [ S.Function "True" [] true ]
+{-
+trueProg :: Program
 trueProg = lambdaLift
     [ S.Function "appTrue" [] $ App (Var "True") (Num 3)
     , S.Function "True" [] true ]
+-}
 
 main :: IO ()
 main = do
